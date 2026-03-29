@@ -1,0 +1,3 @@
+pip install -r requirements.txt 
+/ 
+pip intall numpy Pillow PyAutoGUI samplerate scipy sounddevice soundfile
