@@ -1,41 +1,18 @@
 Träd
 Ljud när man klickar på ljudfil. 
-Filtrering-knapp ska ta bort icke-ljudfiler.
-- Filer ska hamna längst ner när de importeras. (Kan bara göra en till for-loop.)✅
 
   Sequencer
-Kunna länka en fil till ett spår. Kanske kan använda treeview-instansen för detta.
+Kunna länka en fil till ett spår. Kanske kan använda treeview-instansen för detta. (behövs kanske inte)
 Lägga till vertikal scroll när man håller över tracksen (binding).
 Kanske fixa prestande (kanske inte ens går.)
 Fixa annan bakgrund vid iklickat beat.
-Byta namn på spår. 
 
   Mixer
-- Gör mixer klass. ✅
-- Gör klass för kanaler. ✅
 Fixa ui:t.
-Gör länking från spår till kanal (iaf kunna se vilka spår som är länkade till en viss kanal.) ✅
-Länka alla kanaler till en master. (kunna se alla spår.) ✅ (gjord med ljudklipp)
-
-Om man hinner: Effekter (ska inte vara så svårt.) ✅
-
-  Ljud
-Sounddevice. 
-Fixa en länkning mellan tid och uppspelning. (på något sätt.) ✅
-Researcha mer när layouten är mer komplett. ✅
 
   Piano roll.
-Gör endast om tid finns. Ett problem finns. Om man vill spela ackord är det näst intill onödigt. Jag kan implementera inspelning med mikrofon ganska mycket enklare än jag kan pianoroll men då måste man ju ha instrument. Plus man ska ju ändå kunna dra in ljudfiler med AudioClip klassen. 
-❎
-  Playlist. 
-- Tror jag kan göra ett grid-system för denna. Problemet är att sequencern redan renderas lite konstigt om den har för många olika spår.
-- / Om jag använder canvas och drawline kanske det går bättre? Nog inte lika tunga som massor knappar. Men då måste jag göra massor event binding och då kanske de blir tyngre än vanliga knappar??? ✅
-Drag & Drop? 
-- Länka en markör till tiden & positionen (hur??? kanske matte eller nåt.)✅
-
-Topbar 
-Kunna välja bpm. Drag & scroll vore satisfying men kanske kräver dyrbar tid. I värsta fall använd bara Entry och bindings med UpArrow och DownArrow. Alternativt likande EditableText klassen fast med label istället för create_text(). ✅ (har fof inte gjort allt bindings för orkar inte)
-Gömma musen när man ändrar bpm. ✅
-Ändra snap ✅
+Gör endast om tid finns. Ett problem finns. Om man vill spela ackord är det näst intill onödigt. 
+Inspelning med mikrofon ganska mycket enklare än jag kan pianoroll men då måste man ju ha instrument. Plus man kan ju ändå dra in ljudfiler med AudioClip klassen. 
 
 
+Sparning och laddning av klipp och projekt. Detta är förmodligen viktigast.
