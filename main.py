@@ -125,7 +125,7 @@ class Träd:
             if mouse_in_canvas:
                 try:
                     data = global_stuff.files[global_stuff.dragged_item] if global_stuff.dragged_item in global_stuff.files.keys() else None
-                    audioclips.append(middle.AudioClip(x=x_relativeto_canvas, y=y_relativeto_canvas, audio=global_stuff.dragged_item, group=global_stuff.group, data=data))
+                    middle.AudioClip(x=x_relativeto_canvas, y=y_relativeto_canvas, audio=global_stuff.dragged_item, group=global_stuff.group, data=data)
                 except ValueError:
                     print("brrbrrpatapim")
             if not global_stuff.pen_selected:
@@ -237,7 +237,7 @@ class Top:
         self.bucket.configure(menu=self.bucket_menu)
         self.bucket_menu.add_command(label="None", background=colors["grid_background"], foreground="black", command=self.reset_bucket)
         
-        self.bpmselector = custom_widgets.DragSelector(root, min_bpm=40, max_bpm=200, global_root=global_root, linked_var=bpm_var, font_size=10)
+        self.bpmselector = custom_widgets.DragSelector(root, min_bpm=global_stuff.min_bpm, max_bpm=global_stuff.max_bpm, global_root=global_root, linked_var=bpm_var, font_size=10)
         
         
         options = ["1", "1/2", "1/4", "1/8", "1/16"]
@@ -467,21 +467,24 @@ class Middle:
 
             self.start_tid = None # gör när du orkar
 
-            self.x2 = self.get_x2(self.x,width=self.width)
-            self.y2 = self.y+self.height
+            self.x2 = self.x+self.width # x2 och y2 är i logiska koordinater.
+            self.y2 = self.y + self.height 
             self.row = None
-
+            threading.Thread(target=self.load_audio, args=(audio,data)).start()
+            
+        def create_clip(self, x, y):
             try:
-                x, y = middle.real_x_canvasx(self.x), middle.real_y_canvasy(self.y)
+                x, y = middle.real_x_canvasx(x), middle.real_y_canvasy(y)
                 x2, y2 = self.get_x2(x), self.get_y2(y)
                 self.box = self.canvas.create_rectangle(x, y, x2, y2, tags=("scaleable", "audioclip"), fill=self.clip_color)
-                self.text = self.canvas.create_text(x+(self.width/2)*middle.zoom_x, y+(self.height/2)*middle.zoom_y, text=self.file_name, tags=("scaleable", "audioclip"), font=("Helvetica", 7), fill="white", width=self.width)
+                self.text = self.canvas.create_text(x+(self.width*middle.zoom_x/2), y+(self.height*middle.zoom_y/2), text=self.file_name, tags=("scaleable", "audioclip"), font=("Helvetica", 7), fill="white", width=self.width)
 
                 self.canvas.tag_bind(self.box, "<Button-1>", self.start_drag)
                 self.canvas.tag_bind(self.box, "<B1-Motion>", self.on_drag)
                 self.canvas.tag_bind(self.text, "<Button-1>", self.start_drag)
                 self.canvas.tag_bind(self.text, "<B1-Motion>", self.on_drag)
                 self.canvas.tag_bind(self.box, "<ButtonRelease-1>", self.mouse_up)
+                print("Clip created")
                 try: 
                     self.clip_options = self.ClipOptions(self)
                 except Exception as e:
@@ -493,11 +496,15 @@ class Middle:
                 self.canvas.tag_bind(self.box, "<Button-3>", self.delete_clip)
                 self.canvas.tag_bind(self.text, "<Button-3>", self.delete_clip)
 
-                threading.Thread(target=self.load_audio, args=(audio,data)).start()
+                mixer.channels[self.clip_options.channel_var.get()].clips.append(self)
                 
             except TclError as e:
                 print(e)
                 messagebox.showerror(title="Sämst lol", message="En av klippets koordinater är utanför spellistan. HUR LÅNG LÅT GÖR DU!?")
+            except Exception as e:
+                print(e)
+                messagebox.showerror(title="Något gick fel", message="Kunde inte skapa klippet. Kolla konsolen för mer info.")
+
         def reverse_audio(self, group, *args):
                 for clip in group[0]:
                     clip.data = clip.data[::-1]
@@ -537,18 +544,16 @@ class Middle:
 
                 self.width = logical_width
                 self.x2 = self.x + logical_width
+                if self.x2> middle.cell_width*middle.beats:
+                    self.x2 = middle.cell_width*middle.beats
+                    self.x = self.x2 - logical_width
+                
                 self.start_position = int(global_stuff.minutes_samples(middle.real_x_minutes(self.x)))
                 audioclips.append(self)
-                mixer.channels[self.clip_options.channel_var.get()].clips.append(self)
-                print(len(self.data), self.data.shape)
                 
-                try:
-                    x0, x2, y0, y2 = middle.real_x_canvasx(self.x), middle.real_x_canvasx(self.x2), middle.real_y_canvasy(self.y), middle.real_y_canvasy(self.y2)
-                    self.canvas.coords(self.box, x0, y0, x2, y2)
-                    self.canvas.coords(self.text, (x0 + self.width * middle.zoom_x / 2), (y0 + self.height * middle.zoom_y / 2))
-                    self.canvas.itemconfigure(self.text, width =logical_width+20)
-                except Exception as e:
-                    print(e)
+                print("Data loaded")
+                
+                root.after(0, lambda: self.create_clip(self.x, self.y))
 
 
         def mouse_up(self,e ):
@@ -656,7 +661,7 @@ class Middle:
                 return width*middle.zoom_x + x
             except TypeError:
                 pass
-        def get_y2(self,y, height=None):
+        def get_y2(self,y, height=None): # Använder canvasy.
             if not height:
                 height = self.height
             return y+height*middle.zoom_y
@@ -680,8 +685,10 @@ class Middle:
         def round_y(self, y):
             logical_y = middle.canvasy_real_y(y)
             snapped_logical_y = math.floor(logical_y/middle.cell_height)*middle.cell_height
-            if snapped_logical_y<0 or self.get_y2(snapped_logical_y)>middle.cell_height*middle.rows:
-                return
+            if snapped_logical_y<0:
+                snapped_logical_y=0
+            if self.get_y2(snapped_logical_y)>middle.cell_height*middle.rows:
+                snapped_logical_y = middle.cell_height*middle.rows - self.height
             return middle.real_y_canvasy(snapped_logical_y)
         def delete_clip(self, event):
             audioclips.remove(self)
@@ -734,6 +741,9 @@ class Middle:
                 self.pan = DoubleVar(value=0)
                 
                 self.options = Toplevel(root)
+                self.options.withdraw()
+                self.options.transient(root)
+                
                 self.options.rowconfigure(0, weight=1)
                 self.options.columnconfigure(0, weight=1)
                 self.options_frame = ttk.Frame(self.options, style="clipoptions.TFrame")
@@ -785,7 +795,7 @@ class Middle:
                 self.last_channel = self.channel_var.get()
                 self.options.protocol("WM_DELETE_WINDOW", self.options.withdraw)
 
-                self.options.withdraw()
+                
             def change_slider(self, e):
                 print(self.pan.get())
             
@@ -814,7 +824,6 @@ class Middle:
     def real_x_canvasx(self,x): # x = (canvasx-self.origin_x)/self.zoom_x -> self.zoom_x * x + self.origin_x = canvasx
         return self.zoom_x*x+self.origin_x
     def canvasy_real_y(self,y):
-
         return (y-self.origin_y)/self.zoom_y
     def real_y_canvasy(self,y):
         return self.zoom_y*y+self.origin_y

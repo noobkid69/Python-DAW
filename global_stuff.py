@@ -23,6 +23,7 @@ dragged_item = None
 pen_selected = False
 bucket_selected = None
 slicer_selected = False
+min_bpm, max_bpm = 40, 300
 files = {}
 def minutes_samples(minutes):
         return minutes*SAMPLERATE*60    # sr = samples/sekunder, samples = sr*sekunder = sr*minuter*60
