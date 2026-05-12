@@ -56,7 +56,7 @@ class Meny:
                 print(folder)
         
         Arkiv.add_command(label = "Nytt project", command = lambda: load_project(root))
-        Arkiv.add_command(label="Spara", command=lambda: save_project(träd, current_project), accelerator="Ctrl+S")
+        Arkiv.add_command(label="Spara", command=lambda: save_project(träd, bpm_var), accelerator="Ctrl+S")
         Arkiv.add_command(label="Inställningar", command=None)
         Arkiv.add_command(label="Stäng", command=root.quit, accelerator="Alt+F4")
         self.meny.add_cascade(label="Arkiv", menu=Arkiv)
@@ -135,11 +135,12 @@ class Träd:
         
         def __init__(self, parent):
             self.träd_objekt = parent
-            self.folder_name = None
+            
             self.folders = set()
             self.files = set()
 
             sounds_path = os.path.join(os.path.abspath(os.getcwd()), "stock_sounds")
+            self.folder_name = sounds_path
             self.import_folder(sounds_path)
         
         def clear_items(self):
@@ -326,7 +327,7 @@ class Middle:
         self.origin_x = 0
         self.origin_y = 0
 
-        self.beats = 1000 # Ska egentligen vara middle.bars men orkar inte ändra
+        self.beats = 1000 # Ska egentligen vara self.bars men orkar inte ändra
         self.rows = 500
 
         self.ctrl_pressed = False
