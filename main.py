@@ -937,7 +937,6 @@ class Middle:
         self.update_scrollregion()
     
 if __name__ == "__main__":
-    
     root.option_add('*tearOff', False)
     root.title("Musicmakerpro")
     root.minsize(600, 600)

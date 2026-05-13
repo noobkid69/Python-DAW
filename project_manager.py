@@ -1,6 +1,9 @@
 import json
 from tkinter import simpledialog
 from pathlib import Path
+import global_stuff
+audioclips = []
+
 current_sample_rate = 44100
 current_project = None
 empty_project = {"Folder":None, "Project_sample_rate": 44100, "Name":"untitled"}
@@ -22,13 +25,26 @@ def save_project(träd, bpm_var):
             return
     
     current_project = name
-    project_data = {
-        "Name": name, 
-        "Folder": träd.file_manager.folder_name, 
-        "Project_sample_rate": current_sample_rate, 
-        "bpm": bpm_var.get(),
-        "channels": []
-        }
+    try:
+        project_data = {
+
+            "Name": name, 
+            "Folder": träd.file_manager.folder_name, 
+            "Project_sample_rate": current_sample_rate, 
+            "bpm": bpm_var.get(),
+            "snap": global_stuff.snap_var_x.get(),
+            "clips": [ {
+                "x": clip.x,
+                "y": clip.y,
+                "group": clip.group,
+                "width": clip.width,
+                "volume": clip.clip_options.volume.get(),
+                "pan": clip.clip_options.pan.get()
+            } for clip in audioclips] 
+            }
+    except Exception as e:
+        print(f"Error gathering project data: {e}")
+        return
     
     project_folder = PROJECTS_DIR / name
     project_folder.mkdir(parents=True, exist_ok=True)
