@@ -52,10 +52,9 @@ class Meny:
         Arkiv.add_cascade(menu=self.Öppna, label="Öppna")
         for _, folders, _ in os.walk("projekt"):
             for folder in folders:
-                self.Öppna.add_command(label=folder, command= lambda: load_project(root, folder))
-                print(folder)
+                self.Öppna.add_command(label=folder, command= lambda folder=folder: load_project(root, middle, name = folder))
         
-        Arkiv.add_command(label = "Nytt project", command = lambda: load_project(root))
+        Arkiv.add_command(label = "Nytt project", command = lambda: load_project(root, middle))
         Arkiv.add_command(label="Spara", command=lambda: save_project(träd, bpm_var), accelerator="Ctrl+S")
         Arkiv.add_command(label="Inställningar", command=None)
         Arkiv.add_command(label="Stäng", command=root.quit, accelerator="Alt+F4")
@@ -124,10 +123,14 @@ class Träd:
                 canvas_absy <= y_root <= canvas_absy + canvas_height)
             if mouse_in_canvas:
                 try:
-                    data = global_stuff.files[global_stuff.dragged_item] if global_stuff.dragged_item in global_stuff.files.keys() else None
-                    middle.AudioClip(x=x_relativeto_canvas, y=y_relativeto_canvas, audio=global_stuff.dragged_item, group=global_stuff.group, data=data)
-                except ValueError:
-                    print("brrbrrpatapim")
+                    if not os.path.isfile(global_stuff.dragged_item):
+                        print(f"File does not exist: {global_stuff.dragged_item}")
+                        return
+                    middle.AudioClip(x=x_relativeto_canvas, y=y_relativeto_canvas, audio=global_stuff.dragged_item, group=global_stuff.group)
+                except Exception as e:
+                    print(f"Error creating AudioClip: {e}")
+                    import traceback
+                    traceback.print_exc()
             if not global_stuff.pen_selected:
                 global_stuff.dragged_item= None
         
@@ -431,7 +434,7 @@ class Middle:
                 print(e)
 
     class AudioClip:
-        def __init__(self, x, y, audio, group, data=None):
+        def __init__(self, x, y, audio, group, start_time=None, end_time=None):
             self.clip_color = "orange"
             self.group = group
             if group:
@@ -447,32 +450,32 @@ class Middle:
                 self.group_text = global_stuff.groups[group][3]
                 self.group_channel = global_stuff.groups[group][4]
                 self.group_reverse = global_stuff.groups[group][5]
-                
             else:
                 self.group_volume = None
                 self.group_channel = None
                 self.group_reverse = None
             self.audio = audio
             self.file_name = os.path.basename(audio)
-
             if not audio.endswith((global_stuff.allowed_file_types)):
                 messagebox.showerror(title="Meow", message="Filen måste vara format .mp3 eller .wav")
                 raise ValueError
             self.canvas = middle.canvas
-
             self.width = middle.cell_width
             self.height = middle.cell_height
             # self.x och y är logiska
             self.x = middle.canvasx_real_x(self.round_x(self.canvas.canvasx(x)))
             self.y = middle.canvasy_real_y(self.round_y(self.canvas.canvasy(y)))
-
-            self.start_tid = None # gör när du orkar
-
+            self.start_time = start_time if start_time else 0
+            self.end_time = end_time
             self.x2 = self.x+self.width # x2 och y2 är i logiska koordinater.
             self.y2 = self.y + self.height 
             self.row = None
-            threading.Thread(target=self.load_audio, args=(audio,data)).start()
-            
+        
+            threading.Thread(target=self.load_audio, args=(audio,self.start_time, self.end_time)).start()  
+        def reverse_audio(self, group, *args):
+                for clip in group[0]:
+                    clip.data = clip.data[::-1]
+         
         def create_clip(self, x, y):
             try:
                 x, y = middle.real_x_canvasx(x), middle.real_y_canvasy(y)
@@ -506,9 +509,7 @@ class Middle:
                 print(e)
                 messagebox.showerror(title="Något gick fel", message="Kunde inte skapa klippet. Kolla konsolen för mer info.")
 
-        def reverse_audio(self, group, *args):
-                for clip in group[0]:
-                    clip.data = clip.data[::-1]
+        
                 
         def update_group_channels(self, *args):
             new_channel = global_stuff.groups[self.group][4].get()
@@ -528,33 +529,42 @@ class Middle:
                 except Exception as e:
                     print(f"Eror vid gruppändring av kanaler: {e}")
 
-        def load_audio(self, audio, data):
-            with lock:
-                if data is None:
-                    self.data, sr = sf.read(audio) 
-                    self.data = samplerate.resample(self.data, global_stuff.SAMPLERATE / sr, 'sinc_best') 
-                    global_stuff.files[self.audio] = self.data
-                else: 
-                    self.data = data
-                if self.group:
-                    if self.group_reverse.get():
-                        self.data = data[::-1]
-                duration_samples = len(self.data)
-                duration_minutes = duration_samples / (global_stuff.SAMPLERATE * 60)
-                logical_width = (duration_minutes * middle.cell_width * bpm_var.get()) / 4
+        def load_audio(self, audio, start_time  = 0, end_time = None):
+            try: 
+                with lock:
+                    try:
+                        self.audio_data, sr = sf.read(audio) 
+                    except Exception as e:
+                        print(f"Error reading audio file {audio}: {e}")
+                        return
+                    self.audio_data = samplerate.resample(self.audio_data, global_stuff.SAMPLERATE / sr, 'sinc_best') 
+                    self.end_time = end_time if end_time else len(self.audio_data)
+                    self.data = self.audio_data[start_time:end_time]
 
-                self.width = logical_width
-                self.x2 = self.x + logical_width
-                if self.x2> middle.cell_width*middle.beats:
-                    self.x2 = middle.cell_width*middle.beats
-                    self.x = self.x2 - logical_width
-                
-                self.start_position = int(global_stuff.minutes_samples(middle.real_x_minutes(self.x)))
-                audioclips.append(self)
-                
-                print("Data loaded")
-                
-                root.after(0, lambda: self.create_clip(self.x, self.y))
+                    global_stuff.files[self.audio] = self.data
+
+                    if self.group:
+                        if self.group_reverse.get():
+                            self.data = self.data[::-1]
+                    duration_minutes = (self.end_time-self.start_time) / (global_stuff.SAMPLERATE * 60)
+                    logical_width = (duration_minutes * middle.cell_width * bpm_var.get()) / 4
+
+                    self.width = logical_width
+                    self.x2 = self.x + logical_width
+                    if self.x2> middle.cell_width*middle.beats:
+                        self.x2 = middle.cell_width*middle.beats
+                        self.x = self.x2 - logical_width
+
+                    self.start_position = int(global_stuff.minutes_samples(middle.real_x_minutes(self.x)))
+                    audioclips.append(self)
+
+                    print("Data loaded")
+
+                    root.after(0, lambda: self.create_clip(self.x, self.y))
+            except Exception as e:
+                print(f"Error in load_audio: {e}")
+                import traceback
+                traceback.print_exc()
 
 
         def mouse_up(self,e ):
@@ -608,8 +618,8 @@ class Middle:
                 bars = self.width / middle.cell_width # m = b/bpm
                 minutes = 4*bars / bpm_var.get()
                 samples = int(global_stuff.minutes_samples(minutes))
-                
-                self.data = self.data[:samples]
+                self.end_time=self.start_time + samples if self.start_time else samples
+                self.data = self.audio_data[self.start_time:self.end_time]
 
                 self.x2 = middle.canvasx_real_x(clip_x)
                 self.canvas.coords(self.box, clip_x, clip_y, canvasx, clip_y2)
@@ -937,6 +947,8 @@ class Middle:
         self.update_scrollregion()
     
 if __name__ == "__main__":
+    
+
     root.option_add('*tearOff', False)
     root.title("Musicmakerpro")
     root.minsize(600, 600)

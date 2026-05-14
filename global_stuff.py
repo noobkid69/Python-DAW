@@ -10,13 +10,19 @@ def format_tuning(*args):
         tuning_display.set(f"{val:.2f}")
     except ValueError:
         pass
-    
-tuning_setting = DoubleVar(value=0)
-tuning_display = StringVar()
+def init_tk_variables():
+    global tuning_setting, tuning_display, snap_var_x
+    tuning_setting = DoubleVar(value=0)
+    tuning_display = StringVar()
+    snap_var_x = StringVar()
+     
+tuning_setting = None
+tuning_display = None
+snap_var_x = None
 playing = False
 group = None
 groups = {}
-snap_var_x = StringVar()
+
 allowed_file_types = (".mp3", ".wav")
 play_start_sample = None
 dragged_item = None

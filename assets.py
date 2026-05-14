@@ -1,11 +1,20 @@
 from tkinter import *
 from tkinter import ttk
 from PIL import Image, ImageTk
+import global_stuff
+import traceback
 colors = {"scroll_bar_background" : "#5e626e", "grid_background": "#547792", "timeline_background": "#213448", "marker_text": "#ECEFCA",
         "bar_lines": "black", "beat_lines": "#3B5A6E", "track_info_background": "#D3D3D3", "topbar_background": "#4A5D6F", "marker_color": "#138027", "top_bar_text":"white", "scale_handle":"#a2779f"}
 
 
 root = Tk()
+
+def report_callback_exception(exc, val, tb):
+    traceback.print_exception(exc, val, tb)
+
+root.report_callback_exception = report_callback_exception
+
+global_stuff.init_tk_variables()
 style = ttk.Style()
 style.theme_use("clam")
 

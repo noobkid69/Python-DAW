@@ -11,11 +11,27 @@ BASE_DIR = Path(__file__).resolve().parent
 PROJECTS_DIR = BASE_DIR / "projekt"
 print("BASE_DIR: ", BASE_DIR)
 
-def load_project(root, name = None): # ska kunna acceptera både sträng med namn och rå data i form av dictionary.
-    if name:
+def load_project(root, middle, name = None): # ska kunna acceptera både sträng med namn och rå data i form av dictionary.
+    try:
+        if name is None:
+            root.title(f"Musicmakerpro | {empty_project['Name']}")
+            return
         root.title(f"Musicmakerpro | {name}")
-    else: 
-        root.title(f"Musicmakerpro | {empty_project['Name']}")
+        with open(PROJECTS_DIR/name/"data.json", mode="r", encoding="utf-8") as file:
+            print(name)
+            data = json.load(file)
+        print(data)
+        for clip in audioclips:
+            clip.destroy()
+        audioclips.clear()
+        for clip_data in data["clips"]:
+            new_clip = middle.AudioClip(x=clip_data["x"], y=clip_data["y"], audio=clip_data["audio"], group=clip_data["group"], start_time=clip_data["start_time"], end_time=clip_data["end_time"])
+            new_clip.clip_options.volume.set(clip_data.get("volume", 1.0))
+            new_clip.clip_options.pan.set(clip_data.get("pan", 0.0))
+            audioclips.append(new_clip)
+    except Exception as e:
+        print(f"Error loading project: {e}")
+
 def save_project(träd, bpm_var):
     global current_project
     name = current_project
@@ -34,12 +50,15 @@ def save_project(träd, bpm_var):
             "bpm": bpm_var.get(),
             "snap": global_stuff.snap_var_x.get(),
             "clips": [ {
+                "audio": clip.audio,
                 "x": clip.x,
                 "y": clip.y,
                 "group": clip.group,
                 "width": clip.width,
                 "volume": clip.clip_options.volume.get(),
-                "pan": clip.clip_options.pan.get()
+                "pan": clip.clip_options.pan.get(),
+                "start_time": clip.start_time,
+                "end_time": clip.end_time
             } for clip in audioclips] 
             }
     except Exception as e:
