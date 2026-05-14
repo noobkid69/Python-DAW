@@ -25,9 +25,16 @@ def load_project(root, middle, name = None): # ska kunna acceptera både sträng
             clip.destroy()
         audioclips.clear()
         for clip_data in data["clips"]:
-            new_clip = middle.AudioClip(x=clip_data["x"], y=clip_data["y"], audio=clip_data["audio"], group=clip_data["group"], start_time=clip_data["start_time"], end_time=clip_data["end_time"])
-            new_clip.clip_options.volume.set(clip_data.get("volume", 1.0))
-            new_clip.clip_options.pan.set(clip_data.get("pan", 0.0))
+            new_clip = middle.AudioClip(
+                x=clip_data["x"],
+                y=clip_data["y"],
+                audio=clip_data["audio"],
+                group=clip_data["group"],
+                start_time=clip_data["start_time"],
+                end_time=clip_data["end_time"],
+                volume=clip_data.get("volume", 60),
+                pan=clip_data.get("pan", 0.0)
+            )
             audioclips.append(new_clip)
     except Exception as e:
         print(f"Error loading project: {e}")

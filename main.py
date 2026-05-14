@@ -434,7 +434,7 @@ class Middle:
                 print(e)
 
     class AudioClip:
-        def __init__(self, x, y, audio, group, start_time=None, end_time=None):
+        def __init__(self, x, y, audio, group, start_time=None, end_time=None, volume=None, pan=None):
             self.clip_color = "orange"
             self.group = group
             if group:
@@ -463,10 +463,12 @@ class Middle:
             self.width = middle.cell_width
             self.height = middle.cell_height
             # self.x och y är logiska
-            self.x = middle.canvasx_real_x(self.round_x(self.canvas.canvasx(x)))
+            self.x = middle.canvasx_real_x(self.round_x(self.canvas.canvasx(x))) if not end_time else x
             self.y = middle.canvasy_real_y(self.round_y(self.canvas.canvasy(y)))
             self.start_time = start_time if start_time else 0
             self.end_time = end_time
+            self.volume = volume
+            self.pan = pan
             self.x2 = self.x+self.width # x2 och y2 är i logiska koordinater.
             self.y2 = self.y + self.height 
             self.row = None
@@ -489,11 +491,15 @@ class Middle:
                 self.canvas.tag_bind(self.text, "<B1-Motion>", self.on_drag)
                 self.canvas.tag_bind(self.box, "<ButtonRelease-1>", self.mouse_up)
                 print("Clip created")
-                try: 
+                try:
                     self.clip_options = self.ClipOptions(self)
+                    if self.volume is not None:
+                        self.clip_options.volume.set(self.volume)
+                    if self.pan is not None:
+                        self.clip_options.pan.set(self.pan)
                 except Exception as e:
                     print(e)
-              
+                
                 self.canvas.tag_bind(self.box, "<Double-1>", self.clip_options.show_options)
                 self.canvas.tag_bind(self.text, "<Double-1>", self.clip_options.show_options)
 
