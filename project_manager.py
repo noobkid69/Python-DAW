@@ -13,6 +13,7 @@ print("BASE_DIR: ", BASE_DIR)
 
 def load_project(root, middle, name = None): # ska kunna acceptera både sträng med namn och rå data i form av dictionary.
     try:
+        clear_project(root)
         if name is None:
             root.title(f"Musicmakerpro | {empty_project['Name']}")
             return
@@ -21,9 +22,6 @@ def load_project(root, middle, name = None): # ska kunna acceptera både sträng
             print(name)
             data = json.load(file)
         print(data)
-        for clip in audioclips:
-            clip.destroy()
-        audioclips.clear()
         for clip_data in data["clips"]:
             new_clip = middle.AudioClip(
                 x=clip_data["x"],
@@ -38,6 +36,12 @@ def load_project(root, middle, name = None): # ska kunna acceptera både sträng
             audioclips.append(new_clip)
     except Exception as e:
         print(f"Error loading project: {e}")
+
+def clear_project(root):
+    print(audioclips)
+    for clip in audioclips[:]:
+        clip.delete_clip()
+    root.title(f"Musicmakerpro | {empty_project['Name']}")
 
 def save_project(träd, bpm_var):
     global current_project

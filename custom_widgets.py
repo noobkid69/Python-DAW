@@ -186,15 +186,17 @@ class Knob(Canvas):
         if linked_var: 
             self.volume_label["textvariable"] = self.linked_text
             self.value = linked_var.get()
-            extent = self.value if not 1 else 0.999
+            extent = self.value if self.value != 1 else 0.999
             self.itemconfig(self.value_arc, extent=-extent*360)
+        print(self.value)
         self.bind("<Button-1>", self.grab_knob)
         self.bind("<B1-Motion>", self.change_knob)
 
     def update_linked_vars(self, new_volume, new_text):
-        self.linked_var = new_volume
-        self.linked_text = new_text
-        self.volume_label["textvariable"] = new_text
+        self.linked_var = (new_volume)
+        self.linked_text = (new_text)
+
+        self.volume_label["textvariable"] = self.linked_text
     def grab_knob(self, event):
         self.last_degree = -float(self.itemcget(self.value_arc, "extent"))
 

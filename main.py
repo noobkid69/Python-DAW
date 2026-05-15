@@ -707,7 +707,8 @@ class Middle:
             if self.get_y2(snapped_logical_y)>middle.cell_height*middle.rows:
                 snapped_logical_y = middle.cell_height*middle.rows - self.height
             return middle.real_y_canvasy(snapped_logical_y)
-        def delete_clip(self, event):
+        def delete_clip(self, event=None):
+            print(self in audioclips)
             audioclips.remove(self)
             self.canvas.delete(self.box)
             self.canvas.delete(self.text)
@@ -756,7 +757,7 @@ class Middle:
                 self.clip = clip
                 self.volume = IntVar(value=60)
                 self.pan = DoubleVar(value=0)
-                
+                self.volume_text = StringVar(value="60%")
                 self.options = Toplevel(root)
                 self.options.withdraw()
                 self.options.transient(root)
@@ -785,7 +786,7 @@ class Middle:
                 
                 reverse_label = ttk.Label(self.options_frame, text="Reverse:")
                 self.reverse_check_button = ttk.Checkbutton(self.options_frame, variable=self.reversed_var)
-                self.volume_knob = custom_widgets.Knob(master=self.options_frame, width=80, height=80, padding=10, sensitivity=100, label_size=8)
+                self.volume_knob = custom_widgets.Knob(master=self.options_frame, linked_var=self.volume, linked_text=self.volume_text, width=80, height=80, padding=10, sensitivity=100, label_size=8)
                 pan_text = ttk.Label(self.options_frame, text="Pan:")
                 pan_slider = ttk.Scale(self.options_frame, orient=HORIZONTAL, from_=-1, to=1, variable=self.pan, command=self.change_slider)
                 try: 
