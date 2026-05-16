@@ -36,11 +36,12 @@ class Mixer:
     self.mixer.deiconify()
   
   def create_channels(self):
+    channel_num = 20
     self.channels = {}
     self.master = self.Master(self, "Master", 80)
     self.channels.update({"mstr": self.master})
     
-    for i in range(5):
+    for i in range(channel_num - 1):
       self.channels.update({str(i+1): self.Channel(self, f"Channel {i+1}", 50, i+1)})
     print(self.channels)
   
