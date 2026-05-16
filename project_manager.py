@@ -1,6 +1,9 @@
 import json
-from tkinter import simpledialog
+from tkinter import simpledialog, IntVar, DoubleVar, StringVar, BooleanVar
 from pathlib import Path
+from tokenize import group
+
+from sympy import root
 import global_stuff
 audioclips = []
 
@@ -19,9 +22,9 @@ def load_project(root, middle, name = None): # ska kunna acceptera både sträng
             return
         root.title(f"Musicmakerpro | {name}")
         with open(PROJECTS_DIR/name/"data.json", mode="r", encoding="utf-8") as file:
-            print(name)
             data = json.load(file)
-        print(data)
+        global_stuff.groups = {group_name: [[], group[1], DoubleVar(master= root, value=group[2]), StringVar(master = root, value=group[3]), StringVar(master = root, value=group[4]), BooleanVar(master = root, value=group[5])] for group_name, group in data["groups"].items()}
+
         for clip_data in data["clips"]:
             new_clip = middle.AudioClip(
                 x=clip_data["x"],
@@ -30,15 +33,29 @@ def load_project(root, middle, name = None): # ska kunna acceptera både sträng
                 group=clip_data["group"],
                 start_time=clip_data["start_time"],
                 end_time=clip_data["end_time"],
-                volume=clip_data.get("volume", 60),
-                pan=clip_data.get("pan", 0.0)
+                volume=clip_data["volume"] if "volume" in clip_data else 0.6,
+                pan=clip_data["pan"] if "pan" in clip_data else 0.0
             )
-            audioclips.append(new_clip)
+            print(new_clip.volume)
+
+            for group_name, group in global_stuff.groups.items():
+
+                channel_var = group[4]
+                reverse_var = group[5]
+
+                if group[0]:
+                    first_clip = group[0][0]
+                    channel_var.trace_add("write", first_clip.update_group_channels)
+                    reverse_var.trace_add("write", lambda *args, g=group: first_clip.reverse_audio(g, *args))
+            
+        root.after(100, lambda: global_stuff.snap_var_x.set(data["snap"]))
+        root.after(100, lambda: global_stuff.bpm_var.set(data["bpm"]))
+
     except Exception as e:
         print(f"Error loading project: {e}")
 
 def clear_project(root):
-    print(audioclips)
+    global_stuff.groups.clear()
     for clip in audioclips[:]:
         clip.delete_clip()
     root.title(f"Musicmakerpro | {empty_project['Name']}")
@@ -58,8 +75,9 @@ def save_project(träd, bpm_var):
             "Name": name, 
             "Folder": träd.file_manager.folder_name, 
             "Project_sample_rate": current_sample_rate, 
-            "bpm": bpm_var.get(),
+            "bpm": global_stuff.bpm_var.get(),
             "snap": global_stuff.snap_var_x.get(),
+            "groups": {group_name: [[], global_stuff.groups[group_name][1], global_stuff.groups[group_name][2].get(), global_stuff.groups[group_name][3].get(), global_stuff.groups[group_name][4].get(), global_stuff.groups[group_name][5].get()] for group_name, group in global_stuff.groups.items()},
             "clips": [ {
                 "audio": clip.audio,
                 "x": clip.x,

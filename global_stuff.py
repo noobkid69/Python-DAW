@@ -11,10 +11,11 @@ def format_tuning(*args):
     except ValueError:
         pass
 def init_tk_variables():
-    global tuning_setting, tuning_display, snap_var_x
+    global tuning_setting, tuning_display, snap_var_x, bpm_var
     tuning_setting = DoubleVar(value=0)
     tuning_display = StringVar()
     snap_var_x = StringVar()
+    bpm_var = IntVar(value=140)
      
 tuning_setting = None
 tuning_display = None

@@ -39,7 +39,6 @@ def str_to_float(s): # Det fanns visst en Fractions modul som gör exakt samma s
 def clip_change_width_all(*args):
     for clip in audioclips:
         clip.change_width_bpm()
-        print("sus")
 
 class Meny:
     def __init__(self, träd):
@@ -55,7 +54,7 @@ class Meny:
                 self.Öppna.add_command(label=folder, command= lambda folder=folder: load_project(root, middle, name = folder))
         
         Arkiv.add_command(label = "Nytt project", command = lambda: load_project(root, middle))
-        Arkiv.add_command(label="Spara", command=lambda: save_project(träd, bpm_var), accelerator="Ctrl+S")
+        Arkiv.add_command(label="Spara", command=lambda: save_project(träd, global_stuff.bpm_var), accelerator="Ctrl+S")
         Arkiv.add_command(label="Inställningar", command=None)
         Arkiv.add_command(label="Stäng", command=root.quit, accelerator="Alt+F4")
         self.meny.add_cascade(label="Arkiv", menu=Arkiv)
@@ -185,7 +184,6 @@ class Träd:
             for dirpath, _, filenames in os.walk(folder):
                 for file in filenames:
                     self.insert_file(os.path.join(dirpath, file)) # Var tvungen att skapa en till loop för att få filerna sist.
-            print(f"files: {len(self.files)}, folders: {len(self.folders)}")
             
 
         def check_button(self):
@@ -241,7 +239,7 @@ class Top:
         self.bucket.configure(menu=self.bucket_menu)
         self.bucket_menu.add_command(label="None", background=colors["grid_background"], foreground="black", command=self.reset_bucket)
         
-        self.bpmselector = custom_widgets.DragSelector(root, min_bpm=global_stuff.min_bpm, max_bpm=global_stuff.max_bpm, global_root=global_root, linked_var=bpm_var, font_size=10)
+        self.bpmselector = custom_widgets.DragSelector(root, min_bpm=global_stuff.min_bpm, max_bpm=global_stuff.max_bpm, global_root=global_root, linked_var=global_stuff.bpm_var, font_size=10)
         
         
         options = ["1", "1/2", "1/4", "1/8", "1/16"]
@@ -287,12 +285,10 @@ class Top:
 
             global_stuff.dragged_item = Träd_instance.träd.focus()
             self.reset_slicer()
-            print("hej")
             return
         self.reset_pen()
         
     def select_bucket(self,group, color):
-        print(color)
         self.bucket_label.configure(foreground=color) 
         self.bucket.configure(background=colors["scale_handle"])
         self.reset_pen()
@@ -369,7 +365,7 @@ class Middle:
         root.after(100, lambda: self.draw_canvas(rows=self.rows, beats=self.beats))
         
     def button_release(self, e):
-        print(global_stuff.dragged_item)
+        pass
 
     class Marker:
         def __init__(self, playlist, head_canvas, grid_canvas, tid_var=None):
@@ -407,7 +403,7 @@ class Middle:
             self.head_canvas.coords(self.marker, x_coord,0)
             self.grid_canvas.coords(self.line, self.line_points(x_coord, by))
             bars_passed = (real_x)/self.playlist.cell_width
-            minutes = (bars_passed*4)/bpm_var.get()
+            minutes = (bars_passed*4)/global_stuff.bpm_var.get()
             total_seconds = (minutes*60)
             minutes = int(total_seconds//60)
             seconds = (total_seconds%60)
@@ -415,7 +411,7 @@ class Middle:
             timer.update_timer(total_seconds)
 
         def move_seconds(self,t):
-            x = (bpm_var.get() * t / 240) * middle.cell_width
+            x = (global_stuff.bpm_var.get() * t / 240) * middle.cell_width
             x_canvas = middle.real_x_canvasx(x)
             x0, y0, bx,by = self.bbox_coords(self.grid_canvas) 
             self.head_canvas.coords(self.marker, x_canvas,0)
@@ -490,13 +486,8 @@ class Middle:
                 self.canvas.tag_bind(self.text, "<Button-1>", self.start_drag)
                 self.canvas.tag_bind(self.text, "<B1-Motion>", self.on_drag)
                 self.canvas.tag_bind(self.box, "<ButtonRelease-1>", self.mouse_up)
-                print("Clip created")
                 try:
                     self.clip_options = self.ClipOptions(self)
-                    if self.volume is not None:
-                        self.clip_options.volume.set(self.volume)
-                    if self.pan is not None:
-                        self.clip_options.pan.set(self.pan)
                 except Exception as e:
                     print(e)
                 
@@ -516,7 +507,7 @@ class Middle:
                 messagebox.showerror(title="Något gick fel", message="Kunde inte skapa klippet. Kolla konsolen för mer info.")
 
         
-                
+        
         def update_group_channels(self, *args):
             new_channel = global_stuff.groups[self.group][4].get()
             for clip in global_stuff.groups[self.group][0]:
@@ -533,7 +524,7 @@ class Middle:
                     clip.clip_options.last_channel = new_channel
                     clip.clip_options.channel_var.set(new_channel)
                 except Exception as e:
-                    print(f"Eror vid gruppändring av kanaler: {e}")
+                    print(f"Error vid gruppändring av kanaler: {e}")
 
         def load_audio(self, audio, start_time  = 0, end_time = None):
             try: 
@@ -553,7 +544,7 @@ class Middle:
                         if self.group_reverse.get():
                             self.data = self.data[::-1]
                     duration_minutes = (self.end_time-self.start_time) / (global_stuff.SAMPLERATE * 60)
-                    logical_width = (duration_minutes * middle.cell_width * bpm_var.get()) / 4
+                    logical_width = (duration_minutes * middle.cell_width * global_stuff.bpm_var.get()) / 4
 
                     self.width = logical_width
                     self.x2 = self.x + logical_width
@@ -563,8 +554,6 @@ class Middle:
 
                     self.start_position = int(global_stuff.minutes_samples(middle.real_x_minutes(self.x)))
                     audioclips.append(self)
-
-                    print("Data loaded")
 
                     root.after(0, lambda: self.create_clip(self.x, self.y))
             except Exception as e:
@@ -622,7 +611,7 @@ class Middle:
                # nice hur jag blandar middle.canvas och self.canvas
                 
                 bars = self.width / middle.cell_width # m = b/bpm
-                minutes = 4*bars / bpm_var.get()
+                minutes = 4*bars / global_stuff.bpm_var.get()
                 samples = int(global_stuff.minutes_samples(minutes))
                 self.end_time=self.start_time + samples if self.start_time else samples
                 self.data = self.audio_data[self.start_time:self.end_time]
@@ -631,12 +620,10 @@ class Middle:
                 self.canvas.coords(self.box, clip_x, clip_y, canvasx, clip_y2)
                 self.canvas.coords(self.text, (clip_x+self.width*middle.zoom_x/2), (clip_y+self.height*middle.zoom_y/2))
                 
-                print(f"{canvasx} : {clip_x}")
         def start_drag(self, e):
             
             self.start_drag_x = self.canvas.canvasx(e.x) -middle.real_x_canvasx(self.x)
             self.start_drag_y = self.canvas.canvasy(e.y) - middle.real_y_canvasy(self.y)
-            print(self.start_drag_x)
         def on_drag(self, e): # e.x är i relation till canvas kanten (viewport into canvasx)
             current_x = self.canvas.canvasx(e.x)
             current_y = self.canvas.canvasy(e.y)
@@ -650,14 +637,13 @@ class Middle:
                 self.canvas.coords(self.box, x, y, x2, y2)
                 self.canvas.coords(self.text, (x+self.width*middle.zoom_x/2), (y+self.height*middle.zoom_y/2))
                 self.start_position = int(global_stuff.minutes_samples(middle.real_x_minutes(self.x)))
-                print(self.start_position)
             except (TypeError, TclError) as e:
                 print(e)
                 print("Utanför tillåtna gränser")
         def change_width_bpm(self):
             
             duration_minutes = len(self.data)/(global_stuff.SAMPLERATE*60)
-            self.width = (duration_minutes * middle.cell_width * bpm_var.get()) / 4
+            self.width = (duration_minutes * middle.cell_width * global_stuff.bpm_var.get()) / 4
             self.x2 = self.x+self.width
             x = middle.real_x_canvasx(self.x)
             x2 = middle.real_x_canvasx(self.x2)
@@ -708,7 +694,6 @@ class Middle:
                 snapped_logical_y = middle.cell_height*middle.rows - self.height
             return middle.real_y_canvasy(snapped_logical_y)
         def delete_clip(self, event=None):
-            print(self in audioclips)
             audioclips.remove(self)
             self.canvas.delete(self.box)
             self.canvas.delete(self.text)
@@ -737,7 +722,7 @@ class Middle:
             elif chunk.shape[1] < 2:
                 chunk = np.column_stack((chunk, chunk))
             gv = 1 if not self.group_volume else self.group_volume.get()
-            volume = self.clip_options.volume_knob.value*gv
+            volume = (self.clip_options.volume.get()) * gv
             pan = self.clip_options.pan.get()
             left = chunk[:, 0] * volume * (1 - pan)
             right = chunk[:, 1] * volume * (1 + pan)
@@ -755,9 +740,9 @@ class Middle:
         class ClipOptions:
             def __init__(self, clip):
                 self.clip = clip
-                self.volume = IntVar(value=60)
-                self.pan = DoubleVar(value=0)
-                self.volume_text = StringVar(value="60%")
+                self.volume = DoubleVar(value=clip.volume if clip.volume is not None else 0.6)
+                self.pan = DoubleVar(value=clip.pan if clip.pan is not None else 0.0)
+                self.volume_text = StringVar(value=f"{self.volume.get() * 100:.0f}%")
                 self.options = Toplevel(root)
                 self.options.withdraw()
                 self.options.transient(root)
@@ -846,7 +831,7 @@ class Middle:
     def real_y_canvasy(self,y):
         return self.zoom_y*y+self.origin_y
     def real_x_minutes(self,x):
-        return 4*x/(middle.cell_width)/bpm_var.get()
+        return 4*x/(middle.cell_width)/global_stuff.bpm_var.get()
     
 
     def horizontal_scroll(self,*args):
@@ -959,7 +944,7 @@ if __name__ == "__main__":
     root.option_add('*tearOff', False)
     root.title("Musicmakerpro")
     root.minsize(600, 600)
-    bpm_var = IntVar(value=140)
+    
     root.columnconfigure(1, weight=1)
     root.rowconfigure(1, weight=1)
 
@@ -980,6 +965,6 @@ if __name__ == "__main__":
     top_bar = Top(topframe, global_root=root)
     middle = Middle(middle_frame)
 
-    bpm_var.trace_add("write", lambda *args: clip_change_width_all())
+    global_stuff.bpm_var.trace_add("write", lambda *args: clip_change_width_all())
     print(style.layout("Vertical.TScale"))
     root.mainloop()
