@@ -14,7 +14,7 @@ BASE_DIR = Path(__file__).resolve().parent
 PROJECTS_DIR = BASE_DIR / "projekt"
 print("BASE_DIR: ", BASE_DIR)
 
-def load_project(root, middle, name = None): # ska kunna acceptera både sträng med namn och rå data i form av dictionary.
+def load_project(root, middle, name = None, mixer = None): # ska kunna acceptera både sträng med namn och rå data i form av dictionary.
     try:
         clear_project(root)
         if name is None:
@@ -34,10 +34,10 @@ def load_project(root, middle, name = None): # ska kunna acceptera både sträng
                 start_time=clip_data["start_time"],
                 end_time=clip_data["end_time"],
                 volume=clip_data["volume"] if "volume" in clip_data else 0.6,
-                pan=clip_data["pan"] if "pan" in clip_data else 0.0
+                pan=clip_data["pan"] if "pan" in clip_data else 0.0,
+                channel=clip_data["individual_channel"] if "individual_channel" in clip_data else "mstr"
             )
             print(new_clip.volume)
-
             for group_name, group in global_stuff.groups.items():
 
                 channel_var = group[4]
@@ -47,7 +47,22 @@ def load_project(root, middle, name = None): # ska kunna acceptera både sträng
                     first_clip = group[0][0]
                     channel_var.trace_add("write", first_clip.update_group_channels)
                     reverse_var.trace_add("write", lambda *args, g=group: first_clip.reverse_audio(g, *args))
+
+        mixer_data = data.get("mixer", {})
+        for channel_name, channel_data in mixer_data.items():
+
+            if channel_name not in mixer.channels:
+                continue
             
+            channel = mixer.channels[channel_name]
+
+            channel.volume.set(channel_data.get("volume", 0.7))
+
+            effects = channel_data.get("effects", [])
+
+            for effect_obj, effect_name in zip(channel.effects, effects):
+                effect_obj.effect.set(effect_name)
+                
         root.after(100, lambda: global_stuff.snap_var_x.set(data["snap"]))
         root.after(100, lambda: global_stuff.bpm_var.set(data["bpm"]))
 
@@ -60,7 +75,7 @@ def clear_project(root):
         clip.delete_clip()
     root.title(f"Musicmakerpro | {empty_project['Name']}")
 
-def save_project(träd, bpm_var):
+def save_project(träd, bpm_var, mixer):
     global current_project
     name = current_project
     if current_project is None:
@@ -78,11 +93,13 @@ def save_project(träd, bpm_var):
             "bpm": global_stuff.bpm_var.get(),
             "snap": global_stuff.snap_var_x.get(),
             "groups": {group_name: [[], global_stuff.groups[group_name][1], global_stuff.groups[group_name][2].get(), global_stuff.groups[group_name][3].get(), global_stuff.groups[group_name][4].get(), global_stuff.groups[group_name][5].get()] for group_name, group in global_stuff.groups.items()},
+             "mixer": {name: {"volume": channel.volume.get(),"effects": [effect.effect.get() for effect in channel.effects]} for name, channel in mixer.channels.items()},
             "clips": [ {
                 "audio": clip.audio,
                 "x": clip.x,
                 "y": clip.y,
                 "group": clip.group,
+                "individual_channel": clip.clip_options.channel_var.get() if clip.group is None else None,
                 "width": clip.width,
                 "volume": clip.clip_options.volume.get(),
                 "pan": clip.clip_options.pan.get(),

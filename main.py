@@ -51,10 +51,10 @@ class Meny:
         Arkiv.add_cascade(menu=self.Öppna, label="Öppna")
         for _, folders, _ in os.walk("projekt"):
             for folder in folders:
-                self.Öppna.add_command(label=folder, command= lambda folder=folder: load_project(root, middle, name = folder))
+                self.Öppna.add_command(label=folder, command= lambda folder=folder: load_project(root, middle, name = folder, mixer=mixer))
         
         Arkiv.add_command(label = "Nytt project", command = lambda: load_project(root, middle))
-        Arkiv.add_command(label="Spara", command=lambda: save_project(träd, global_stuff.bpm_var), accelerator="Ctrl+S")
+        Arkiv.add_command(label="Spara", command=lambda: save_project(träd, global_stuff.bpm_var, mixer=mixer), accelerator="Ctrl+S")
         Arkiv.add_command(label="Inställningar", command=None)
         Arkiv.add_command(label="Stäng", command=root.quit, accelerator="Alt+F4")
         self.meny.add_cascade(label="Arkiv", menu=Arkiv)
@@ -430,7 +430,7 @@ class Middle:
                 print(e)
 
     class AudioClip:
-        def __init__(self, x, y, audio, group, start_time=None, end_time=None, volume=None, pan=None):
+        def __init__(self, x, y, audio, group, start_time=None, end_time=None, volume=None, pan=None, channel=None):
             self.clip_color = "orange"
             self.group = group
             if group:
@@ -468,6 +468,8 @@ class Middle:
             self.x2 = self.x+self.width # x2 och y2 är i logiska koordinater.
             self.y2 = self.y + self.height 
             self.row = None
+
+            self.channel = channel
         
             threading.Thread(target=self.load_audio, args=(audio,self.start_time, self.end_time)).start()  
         def reverse_audio(self, group, *args):
@@ -488,6 +490,8 @@ class Middle:
                 self.canvas.tag_bind(self.box, "<ButtonRelease-1>", self.mouse_up)
                 try:
                     self.clip_options = self.ClipOptions(self)
+                    if self.channel is not None: 
+                        self.clip_options.channel_var.set(self.channel)
                 except Exception as e:
                     print(e)
                 
